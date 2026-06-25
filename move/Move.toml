@@ -1,0 +1,10 @@
+[package]
+name = "snowball_studio"
+edition = "2024.beta"
+license = "Apache-2.0"
+authors = ["Snowball Studio"]
+
+[dependencies]
+
+[addresses]
+snowball_studio = "0x0"
