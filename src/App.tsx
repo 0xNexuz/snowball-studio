@@ -186,24 +186,58 @@ function explorer(path: 'txblock' | 'object', id: string) {
   return `${EXPLORER_BASE}/${NETWORK}/${route}/${id}`
 }
 
-function receiptImage(receipt: MintedReceipt) {
-  if (receipt.typeId === 2) return '/art-direction/receipt-gallery.png'
-  if (receipt.typeId === 3) return '/art-direction/object-proof.png'
-  return '/art-direction/hero-builder.png'
+const receiptArtSources = [
+  { src: '/art-direction/hero-builder.png', label: 'Yeti Coding HQ' },
+  { src: '/art-direction/object-proof.png', label: 'Object Proof Wall' },
+  { src: '/art-direction/devnet-proof.png', label: 'Devnet Control Room' },
+  { src: '/art-direction/receipt-gallery.png', label: 'Receipt Gallery' },
+]
+
+const receiptCrops = ['center', 'left center', 'right center', 'center top', 'center bottom']
+const receiptFrames = ['cyan', 'mint', 'pink', 'ice']
+
+function seedAt(seed: number[], index: number, fallback = 0) {
+  return seed.length > 0 ? seed[index % seed.length] : fallback
+}
+
+function receiptVisualTraits(receipt: MintedReceipt) {
+  const seedTotal = receipt.seed.reduce((sum, value) => sum + value, 0)
+  const sourceIndex = (seedTotal + receipt.typeId + receipt.steps) % receiptArtSources.length
+  const cropIndex = (seedAt(receipt.seed, 3) + receipt.vaultPercent) % receiptCrops.length
+  const frameIndex = (seedAt(receipt.seed, 7) + receipt.typeId) % receiptFrames.length
+  const tilt = (seedAt(receipt.seed, 11) % 7) - 3
+  const zoom = 1.04 + ((seedAt(receipt.seed, 17) % 7) / 100)
+
+  return {
+    source: receiptArtSources[sourceIndex],
+    crop: receiptCrops[cropIndex],
+    frame: receiptFrames[frameIndex],
+    tilt,
+    zoom,
+    serial: seedTotal % 9999,
+    variant: `${sourceIndex + 1}.${cropIndex + 1}.${frameIndex + 1}`,
+  }
 }
 
 function ReceiptArt({ receipt }: { receipt: MintedReceipt }) {
-  const seedTotal = receipt.seed.reduce((sum, value) => sum + value, 0)
+  const traits = receiptVisualTraits(receipt)
 
   return (
-    <article className="receipt-art" aria-label={`${receipt.name} receipt NFT preview`}>
+    <article className={`receipt-art frame-${traits.frame}`} aria-label={`${receipt.name} receipt NFT preview`}>
       <div className="receipt-art-topline">
         <span>{receipt.digest.startsWith('0xpreview') ? 'Preview' : 'Latest'}</span>
         <strong><Check size={18} /> Minted</strong>
       </div>
       <h3>{receipt.name}</h3>
-      <p>Receipt #{seedTotal % 9999}</p>
-      <img src={receiptImage(receipt)} alt={`${receipt.name} cinematic receipt artwork`} />
+      <p>Receipt #{traits.serial} / Variant {traits.variant}</p>
+      <div className="receipt-image-shell" style={{ transform: `rotate(${traits.tilt}deg)` }}>
+        <img
+          src={traits.source.src}
+          alt={`${receipt.name} ${traits.source.label} artwork`}
+          style={{ objectPosition: traits.crop, transform: `scale(${traits.zoom})` }}
+        />
+        <span>{traits.source.label}</span>
+      </div>
       <dl className="receipt-proof-list">
         <div>
           <dt>Transaction digest</dt>
