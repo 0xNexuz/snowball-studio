@@ -94,6 +94,10 @@ main {
   z-index: 1;
 }
 
+.studio-grid > * {
+  min-width: 0;
+}
+
 .generated-section {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -204,6 +208,7 @@ main {
   align-self: end;
   backdrop-filter: blur(22px);
   border-radius: 8px;
+  min-width: 0;
   padding: clamp(24px, 4vw, 52px);
 }
 
@@ -228,6 +233,12 @@ h1 {
   line-height: 0.88;
   margin-bottom: 20px;
   max-width: 760px;
+  overflow-wrap: break-word;
+}
+
+.builder-panel h1 {
+  font-size: clamp(42px, 5.4vw, 74px);
+  line-height: 0.94;
 }
 
 h2 {
@@ -241,6 +252,28 @@ h2 {
   font-size: 18px;
   line-height: 1.6;
   max-width: 680px;
+}
+
+.transaction-disclaimer {
+  background: rgba(143, 248, 210, 0.08);
+  border: 1px solid rgba(143, 248, 210, 0.28);
+  border-radius: 8px;
+  color: #dffdf2;
+  display: grid;
+  gap: 6px;
+  line-height: 1.5;
+  margin-top: 18px;
+  padding: 14px 16px;
+}
+
+.transaction-disclaimer strong {
+  color: var(--text);
+}
+
+.transaction-disclaimer span {
+  color: #b7d0dd;
+  font-size: 14px;
+  overflow-wrap: anywhere;
 }
 
 .hero-actions {
@@ -273,11 +306,12 @@ h2 {
   border-radius: 8px;
   color: var(--text);
   display: grid;
-  gap: 6px;
-  min-height: 78px;
+  gap: 10px;
+  min-height: 148px;
   padding: 18px;
   text-align: left;
   transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+  width: 100%;
 }
 
 .recipe-card:hover,
@@ -289,7 +323,7 @@ h2 {
   transform: translateY(-1px);
 }
 
-.recipe-card span {
+.recipe-card-title {
   font-size: 18px;
   font-weight: 800;
 }
@@ -298,6 +332,30 @@ h2 {
   color: var(--muted);
   font-size: 14px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.recipe-card-flow {
+  color: #d9f6ff;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.recipe-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.recipe-card-meta strong {
+  background: rgba(124, 227, 255, 0.1);
+  border: 1px solid rgba(124, 227, 255, 0.22);
+  border-radius: 999px;
+  color: #e5faff;
+  font-size: 12px;
+  padding: 5px 8px;
 }
 
 .field {
@@ -324,6 +382,48 @@ h2 {
 .field input:focus {
   border-color: var(--accent);
   outline: 3px solid rgba(124, 227, 255, 0.16);
+}
+
+.signing-brief {
+  background: rgba(5, 12, 21, 0.52);
+  border: 1px solid rgba(124, 227, 255, 0.24);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 18px;
+  padding: 12px;
+}
+
+.signing-brief div {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  display: grid;
+  gap: 5px;
+  min-height: 116px;
+  padding: 12px;
+}
+
+.signing-brief span {
+  color: var(--accent-2);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.signing-brief strong {
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.signing-brief small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .recipe-stats {
@@ -657,6 +757,10 @@ code {
     justify-content: flex-start;
   }
 
+  .signing-brief {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .tx-notice {
     align-items: flex-start;
     grid-template-columns: auto 1fr;
@@ -678,16 +782,55 @@ code {
   }
 
   h1 {
-    font-size: 40px;
+    font-size: 34px;
+    line-height: 1;
   }
 
   .builder-panel {
     padding: 22px;
   }
 
+  .builder-panel h1 {
+    font-size: 32px;
+    line-height: 1.02;
+  }
+
+  .lede,
+  .transaction-disclaimer,
+  .recipe-card,
+  .recipe-card-title,
+  .recipe-card-flow,
+  .recipe-card small,
+  .signing-brief small {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .section-live-actions {
+    justify-content: flex-start;
+  }
+
+  .section-live-actions a {
+    justify-content: center;
+    max-width: 100%;
+  }
+
   .recipe-stats span,
   .proof-grid div {
     width: 100%;
+  }
+
+  .recipe-card-meta strong,
+  .signing-brief {
+    width: 100%;
+  }
+
+  .signing-brief {
+    grid-template-columns: 1fr;
+  }
+
+  .signing-brief div {
+    min-height: auto;
   }
 
   .minted-card .receipt-art {

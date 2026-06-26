@@ -25,6 +25,9 @@ type Recipe = {
   clan: boolean
   guard: boolean
   tone: string
+  intent: string
+  flow: string
+  outcome: string
 }
 
 type MintedReceipt = Recipe & {
@@ -46,6 +49,9 @@ const recipes: Recipe[] = [
     clan: false,
     guard: true,
     tone: 'Icy blue, secure vault, clean trail',
+    intent: 'Best for solo builders who want to save part of a devnet SUI deposit and prove the split happened.',
+    flow: 'Your selected SUI is split once: 60% enters a wallet-owned PersonalVault, 40% comes back liquid.',
+    outcome: 'Mints a RecipeReceipt NFT with vault percent, amount, timestamp, guard flag, and art seed.',
   },
   {
     id: 'clan',
@@ -56,6 +62,9 @@ const recipes: Recipe[] = [
     clan: true,
     guard: true,
     tone: 'Shared HQ, contributor lights, warm neon',
+    intent: 'Best for a team or community treasury moment where the receipt should signal shared coordination.',
+    flow: 'Your selected SUI is split once: 45% enters your PersonalVault, 55% comes back liquid, and the receipt is clan-marked.',
+    outcome: 'Mints a clan-ready RecipeReceipt NFT that can be shown as contribution proof.',
   },
   {
     id: 'guard',
@@ -66,6 +75,9 @@ const recipes: Recipe[] = [
     clan: false,
     guard: true,
     tone: 'Shield room, warning glyphs, deep cyan',
+    intent: 'Best for a stricter savings action where most of the routed devnet SUI should be held aside.',
+    flow: 'Your selected SUI is split once: 80% enters a wallet-owned PersonalVault, 20% comes back liquid.',
+    outcome: 'Mints a guarded RecipeReceipt NFT with a stronger vault signal in the generated art.',
   },
 ]
 
@@ -76,6 +88,24 @@ function mistFromSui(input: string) {
   const [whole = '0', fraction = ''] = input.trim().split('.')
   const padded = `${fraction}000000000`.slice(0, 9)
   return (BigInt(whole || '0') * 1_000_000_000n + BigInt(padded || '0')).toString()
+}
+
+function safeMistFromSui(input: string) {
+  const trimmed = input.trim()
+  if (!/^\d+(\.\d{0,9})?$/.test(trimmed)) return null
+
+  try {
+    return mistFromSui(trimmed)
+  } catch {
+    return null
+  }
+}
+
+function formatSuiFromMist(input: string) {
+  const mist = BigInt(input)
+  const whole = mist / 1_000_000_000n
+  const fraction = (mist % 1_000_000_000n).toString().padStart(9, '0').replace(/0+$/, '')
+  return `${whole.toString()}${fraction ? `.${fraction}` : ''} SUI`
 }
 
 function buildSeed(address: string | undefined, recipe: Recipe, amount: string) {
@@ -314,10 +344,13 @@ function App() {
   }, [account?.address, client])
 
   const recipe = useMemo(() => recipes.find((item) => item.id === selectedId) ?? recipes[0], [selectedId])
+  const previewAmountMist = safeMistFromSui(amount) ?? '0'
+  const vaultedMist = (BigInt(previewAmountMist) * BigInt(recipe.vaultPercent) / 100n).toString()
+  const liquidMist = (BigInt(previewAmountMist) - BigInt(vaultedMist)).toString()
   const previewReceipt: MintedReceipt = {
     ...recipe,
     digest: '0xpreview000000000000000000000000000000000000000000000000000000000000',
-    amountMist: mistFromSui(amount || '0'),
+    amountMist: previewAmountMist,
     seed: buildSeed(account?.address, recipe, amount),
     mintedAt: new Date().toISOString(),
   }
@@ -333,7 +366,11 @@ function App() {
       return
     }
 
-    const amountMist = mistFromSui(amount)
+    const amountMist = safeMistFromSui(amount)
+    if (!amountMist) {
+      setError('Enter a valid SUI amount with up to 9 decimals, like 0.05.')
+      return
+    }
     if (BigInt(amountMist) <= 0n) {
       setError('Enter an amount greater than zero.')
       return
@@ -414,8 +451,12 @@ function App() {
             <p className="eyebrow">Sui devnet product</p>
             <h1 id="builder-title">Real DeFi moves. Collectible receipts.</h1>
             <p className="lede">
-              Split SUI into a vault, mint a receipt object, and render the NFT art from the exact metadata that landed on-chain.
+              Choose how devnet SUI should be split before you sign. The app sends one real Sui transaction that creates a vault object, a receipt NFT, and explorer-verifiable object changes.
             </p>
+            <div className="transaction-disclaimer" role="note">
+              <strong>What you are transacting:</strong>
+              <span>This uses Sui devnet tokens only. You are not paying Snowball Studio; your wallet signs a Move call that routes your own devnet SUI and pays normal devnet gas.</span>
+            </div>
             <div className="hero-actions">
               <a className="inline-proof" href={explorer('txblock', PROOF_MINT_DIGEST)} target="_blank" rel="noreferrer">
                 View devnet proof <ArrowUpRight size={16} />
@@ -431,8 +472,14 @@ function App() {
                   role="radio"
                   aria-checked={item.id === selectedId}
                 >
-                  <span>{item.name}</span>
-                  <small>{item.tone}</small>
+                  <span className="recipe-card-title">{item.name}</span>
+                  <small>{item.intent}</small>
+                  <span className="recipe-card-flow">{item.flow}</span>
+                  <span className="recipe-card-meta">
+                    <strong>{item.vaultPercent}% vault</strong>
+                    <strong>{100 - item.vaultPercent}% liquid</strong>
+                    <strong>{item.steps} PTB steps</strong>
+                  </span>
                 </button>
               ))}
             </div>
@@ -441,6 +488,34 @@ function App() {
               <span>Amount to route into recipe</span>
               <input value={amount} onChange={(event) => setAmount(event.target.value)} inputMode="decimal" />
             </label>
+
+            <section className="signing-brief" aria-label="Transaction breakdown before signing">
+              <div>
+                <span>You sign</span>
+                <strong>split_snowball Move call</strong>
+                <small>One programmable transaction block on Sui devnet.</small>
+              </div>
+              <div>
+                <span>Routed amount</span>
+                <strong>{formatSuiFromMist(previewAmountMist)}</strong>
+                <small>The amount selected above, before devnet gas.</small>
+              </div>
+              <div>
+                <span>Locked in your vault</span>
+                <strong>{formatSuiFromMist(vaultedMist)}</strong>
+                <small>A PersonalVault object owned by your wallet.</small>
+              </div>
+              <div>
+                <span>Returned liquid</span>
+                <strong>{formatSuiFromMist(liquidMist)}</strong>
+                <small>The remainder is returned to your wallet as SUI.</small>
+              </div>
+              <div>
+                <span>NFT created</span>
+                <strong>RecipeReceipt</strong>
+                <small>Artwork is generated from the receipt metadata after mint.</small>
+              </div>
+            </section>
 
             <div className="recipe-stats" aria-label="Selected recipe traits">
               <span><GitBranch size={16} /> {recipe.steps} PTB steps</span>
