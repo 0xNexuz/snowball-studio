@@ -1,6 +1,6 @@
 import { ConnectButton, useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
-import { ArrowUpRight, BadgeCheck, Bell, Clock3, Eye, GitBranch, LockKeyhole, Shield, Snowflake, Users } from 'lucide-react'
+import { ArrowUpRight, BadgeCheck, Bell, Check, Clock3, Eye, GitBranch, LockKeyhole, Shield, Snowflake, UnlockKeyhole, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import {
@@ -37,6 +37,9 @@ type MintedReceipt = Recipe & {
   amountMist: string
   seed: number[]
   mintedAt: string
+  vaultWithdrawn?: boolean
+  withdrawnDigest?: string
+  withdrawnAt?: string
 }
 
 const recipes: Recipe[] = [
@@ -83,6 +86,7 @@ const recipes: Recipe[] = [
 
 const configured = PACKAGE_ID.startsWith('0x') && STUDIO_ID.startsWith('0x')
 const RECEIPT_TYPE = `${PACKAGE_ID}::snowball_studio::RecipeReceipt`
+const VAULT_TYPE = `${PACKAGE_ID}::snowball_studio::PersonalVault`
 
 function mistFromSui(input: string) {
   const [whole = '0', fraction = ''] = input.trim().split('.')
@@ -182,78 +186,47 @@ function explorer(path: 'txblock' | 'object', id: string) {
   return `${EXPLORER_BASE}/${NETWORK}/${route}/${id}`
 }
 
+function receiptImage(receipt: MintedReceipt) {
+  if (receipt.typeId === 2) return '/art-direction/receipt-gallery.png'
+  if (receipt.typeId === 3) return '/art-direction/object-proof.png'
+  return '/art-direction/hero-builder.png'
+}
+
 function ReceiptArt({ receipt }: { receipt: MintedReceipt }) {
   const seedTotal = receipt.seed.reduce((sum, value) => sum + value, 0)
-  const monitorCount = Math.max(3, Math.min(6, receipt.steps))
-  const snowball = 56 + (Number(BigInt(receipt.amountMist) / 1_000_000n) % 36)
-  const accent = receipt.clan ? '#ffb7d5' : receipt.guard ? '#8ff8d2' : '#74d7ff'
-  const panels = Array.from({ length: monitorCount })
 
   return (
-    <svg className="receipt-art" viewBox="0 0 900 900" role="img" aria-label={`${receipt.name} generated NFT artwork`}>
-      <defs>
-        <radialGradient id="snowGlow" cx="50%" cy="45%" r="55%">
-          <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="45%" stopColor="#dff6ff" />
-          <stop offset="100%" stopColor={accent} />
-        </radialGradient>
-        <linearGradient id="room" x1="0%" x2="100%" y1="0%" y2="100%">
-          <stop offset="0%" stopColor="#101827" />
-          <stop offset="55%" stopColor="#182842" />
-          <stop offset="100%" stopColor="#070b13" />
-        </linearGradient>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="4" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-      <rect width="900" height="900" fill="url(#room)" />
-      <path d="M80 92h740l-70 118H150z" fill="#223451" />
-      <path d="M118 168h640" stroke={accent} strokeWidth="6" filter="url(#glow)" />
-      <text x="450" y="142" textAnchor="middle" fill={accent} fontFamily="ui-monospace, monospace" fontSize="44" filter="url(#glow)">
-        {receipt.name}
-      </text>
-      <text x="450" y="198" textAnchor="middle" fill="#d9f6ff" fontFamily="ui-monospace, monospace" fontSize="24">
-        RECEIPT #{seedTotal % 9999}
-      </text>
-      <g transform="translate(120 300)">
-        <ellipse cx="150" cy="302" rx="110" ry="26" fill="#05080f" opacity=".5" />
-        <circle cx="132" cy="106" r="70" fill="#eef9ff" />
-        <path d="M72 142c-36 68-30 180 48 214h112c62-56 58-160 26-222-40 30-116 34-186 8z" fill="#e8f6fb" />
-        <path d="M82 174c42 34 110 40 174 2" fill="none" stroke="#bad2df" strokeWidth="18" />
-        <circle cx="110" cy="104" r="10" fill="#0c1726" />
-        <circle cx="154" cy="104" r="10" fill="#0c1726" />
-        <path d="M110 138c28 16 58 12 76-10" fill="none" stroke="#0c1726" strokeWidth="8" strokeLinecap="round" />
-        <path d="M48 248c-52 48-40 96 12 114" fill="none" stroke="#d8eef7" strokeWidth="28" strokeLinecap="round" />
-        <path d="M244 238c70 24 88 78 50 124" fill="none" stroke="#d8eef7" strokeWidth="26" strokeLinecap="round" />
-        <circle cx="238" cy="382" r={snowball} fill="url(#snowGlow)" filter="url(#glow)" />
-        <path d="M202 356c24-18 58-22 92-8" fill="none" stroke="#fff" strokeWidth="8" opacity=".8" />
-      </g>
-      <g transform="translate(390 338)">
-        {panels.map((_, index) => {
-          const x = (index % 2) * 190
-          const y = Math.floor(index / 2) * 122
-          return (
-            <g key={index} transform={`translate(${x} ${y})`}>
-              <rect width="166" height="94" rx="10" fill="#0b1524" stroke={accent} strokeWidth="2" opacity=".95" />
-              <path d={`M18 24h${62 + ((seedTotal + index * 11) % 56)}M18 46h${86 + ((seedTotal + index * 7) % 42)}M18 68h${48 + ((seedTotal + index * 5) % 70)}`} stroke="#6ee7ff" strokeWidth="5" strokeLinecap="round" opacity=".75" />
-              <circle cx="142" cy="24" r="7" fill={index < receipt.steps ? accent : '#31445f'} />
-            </g>
-          )
-        })}
-      </g>
-      <path d="M178 742C312 646 436 726 558 612s194-52 258-134" fill="none" stroke={accent} strokeWidth="8" strokeLinecap="round" strokeDasharray="18 18" filter="url(#glow)" />
-      <g fill="#eafaff" fontFamily="ui-monospace, monospace" fontSize="24">
-        <text x="80" y="812">vault {receipt.vaultPercent}%</text>
-        <text x="330" y="812">steps {receipt.steps}</text>
-        <text x="560" y="812">{receipt.clan ? 'clan yes' : 'solo vault'}</text>
-        <text x="80" y="852">{receipt.guard ? 'guard enabled' : 'open flow'}</text>
-        <text x="560" y="852">tx {short(receipt.digest)}</text>
-      </g>
-    </svg>
+    <article className="receipt-art" aria-label={`${receipt.name} receipt NFT preview`}>
+      <div className="receipt-art-topline">
+        <span>{receipt.digest.startsWith('0xpreview') ? 'Preview' : 'Latest'}</span>
+        <strong><Check size={18} /> Minted</strong>
+      </div>
+      <h3>{receipt.name}</h3>
+      <p>Receipt #{seedTotal % 9999}</p>
+      <img src={receiptImage(receipt)} alt={`${receipt.name} cinematic receipt artwork`} />
+      <dl className="receipt-proof-list">
+        <div>
+          <dt>Transaction digest</dt>
+          <dd>{short(receipt.digest)}</dd>
+        </div>
+        <div>
+          <dt>Receipt object</dt>
+          <dd>{receipt.receiptId ? short(receipt.receiptId) : 'created after mint'}</dd>
+        </div>
+        <div>
+          <dt>Vault object</dt>
+          <dd>{receipt.vaultWithdrawn ? 'withdrawn' : receipt.vaultId ? short(receipt.vaultId) : 'created after mint'}</dd>
+        </div>
+        <div>
+          <dt>Move package</dt>
+          <dd>{short(PACKAGE_ID)}</dd>
+        </div>
+        <div>
+          <dt>Minted on</dt>
+          <dd>{new Date(receipt.mintedAt).toLocaleString()}</dd>
+        </div>
+      </dl>
+    </article>
   )
 }
 
@@ -267,6 +240,7 @@ function App() {
   const [latestReceipt, setLatestReceipt] = useState<MintedReceipt | null>(null)
   const [error, setError] = useState('')
   const [isLoadingReceipts, setIsLoadingReceipts] = useState(false)
+  const [withdrawingVaultId, setWithdrawingVaultId] = useState<string | null>(null)
 
   useEffect(() => {
     const elements = document.querySelectorAll('.reveal-on-scroll')
@@ -310,12 +284,23 @@ function App() {
           },
           limit: 50,
         })
+        const ownedVaults = await client.getOwnedObjects({
+          owner: account.address,
+          filter: { StructType: VAULT_TYPE },
+          options: { showType: true },
+          limit: 50,
+        })
+        const ownedVaultIds = new Set(ownedVaults.data.map((item) => item.data?.objectId).filter((item): item is string => Boolean(item)))
 
         if (cancelled) return
 
         const chainReceipts = owned.data
           .map((item) => receiptFromObject(item.data))
           .filter((item): item is MintedReceipt => Boolean(item))
+          .map((item) => ({
+            ...item,
+            vaultWithdrawn: Boolean(item.vaultId && !ownedVaultIds.has(item.vaultId)),
+          }))
           .sort((a, b) => new Date(b.mintedAt).getTime() - new Date(a.mintedAt).getTime())
 
         setReceipts((current) => {
@@ -415,10 +400,50 @@ function App() {
       amountMist,
       seed,
       mintedAt: new Date().toISOString(),
+      vaultWithdrawn: false,
     }
 
     setLatestReceipt(mintedReceipt)
     setReceipts((current) => [mintedReceipt, ...current])
+  }
+
+  async function withdrawVault(receipt: MintedReceipt) {
+    setError('')
+
+    if (!account) {
+      setError('Connect the wallet that owns this PersonalVault first.')
+      return
+    }
+    if (!receipt.vaultId || receipt.vaultWithdrawn) {
+      setError('This receipt does not have an active vault to withdraw.')
+      return
+    }
+
+    setWithdrawingVaultId(receipt.vaultId)
+
+    try {
+      const tx = new Transaction()
+      tx.setGasBudget(50_000_000)
+      tx.moveCall({
+        target: `${PACKAGE_ID}::snowball_studio::withdraw_personal_vault`,
+        arguments: [tx.object(receipt.vaultId)],
+      })
+
+      const signed = await mutateAsync({ transaction: tx, chain: CHAIN })
+      await client.waitForTransaction({ digest: signed.digest })
+
+      setLatestReceipt((current) => {
+        if (!current || current.vaultId !== receipt.vaultId) return current
+        return { ...current, vaultWithdrawn: true, withdrawnDigest: signed.digest, withdrawnAt: new Date().toISOString() }
+      })
+      setReceipts((current) => current.map((item) => item.vaultId === receipt.vaultId
+        ? { ...item, vaultWithdrawn: true, withdrawnDigest: signed.digest, withdrawnAt: new Date().toISOString() }
+        : item))
+    } catch (withdrawError) {
+      setError(withdrawError instanceof Error ? withdrawError.message : 'Could not withdraw this vault.')
+    } finally {
+      setWithdrawingVaultId(null)
+    }
   }
 
   return (
@@ -644,11 +669,34 @@ function App() {
               <div>
                 <h2>{item.name}</h2>
                 <p>Minted {new Date(item.mintedAt).toLocaleString()} with {item.vaultPercent}% of the payment locked in a personal vault.</p>
+                <div className={item.vaultWithdrawn ? 'vault-status withdrawn' : 'vault-status'}>
+                  <LockKeyhole size={16} />
+                  <span>
+                    {item.vaultWithdrawn
+                      ? 'Vault withdrawn. The locked devnet SUI was returned to the owner wallet.'
+                      : `Active vault holds ${formatSuiFromMist((BigInt(item.amountMist) * BigInt(item.vaultPercent) / 100n).toString())}.`}
+                  </span>
+                </div>
                 <a href={explorer('txblock', item.digest)} target="_blank" rel="noreferrer">
                   View transaction <ArrowUpRight size={16} />
                 </a>
                 {item.receiptId && <a href={explorer('object', item.receiptId)} target="_blank" rel="noreferrer">Receipt object {short(item.receiptId)}</a>}
                 {item.vaultId && <a href={explorer('object', item.vaultId)} target="_blank" rel="noreferrer">Vault object {short(item.vaultId)}</a>}
+                {item.withdrawnDigest && (
+                  <a href={explorer('txblock', item.withdrawnDigest)} target="_blank" rel="noreferrer">
+                    Withdrawal tx {short(item.withdrawnDigest)}
+                  </a>
+                )}
+                {item.vaultId && !item.vaultWithdrawn && (
+                  <button
+                    className="withdraw-action"
+                    disabled={isPending || withdrawingVaultId === item.vaultId}
+                    onClick={() => void withdrawVault(item)}
+                  >
+                    <UnlockKeyhole size={16} />
+                    {withdrawingVaultId === item.vaultId ? 'Withdrawing vault...' : 'Withdraw locked SUI'}
+                  </button>
+                )}
               </div>
             </article>
           ))
