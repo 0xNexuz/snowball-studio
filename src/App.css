@@ -675,6 +675,19 @@ code {
   z-index: 1;
 }
 
+.receipt-image-shell.finish-frost {
+  border-color: rgba(216, 241, 255, 0.34);
+}
+
+.receipt-image-shell.finish-noir {
+  border-color: rgba(255, 183, 213, 0.28);
+}
+
+.receipt-image-shell.finish-glow {
+  border-color: rgba(156, 247, 205, 0.38);
+  box-shadow: 0 0 28px rgba(156, 247, 205, 0.16);
+}
+
 .receipt-image-shell::after {
   background:
     linear-gradient(180deg, transparent 54%, rgba(4, 11, 20, 0.78)),
@@ -685,12 +698,42 @@ code {
   position: absolute;
 }
 
+.receipt-image-shell.finish-frost::after {
+  background:
+    linear-gradient(180deg, rgba(216, 241, 255, 0.1), rgba(4, 11, 20, 0.66)),
+    radial-gradient(circle at 26% 18%, rgba(216, 241, 255, 0.2), transparent 34%);
+}
+
+.receipt-image-shell.finish-noir::after {
+  background:
+    linear-gradient(180deg, rgba(2, 8, 14, 0.18), rgba(2, 8, 14, 0.84)),
+    radial-gradient(circle at 78% 26%, rgba(255, 183, 213, 0.12), transparent 30%);
+}
+
+.receipt-image-shell.finish-glow::after {
+  background:
+    linear-gradient(180deg, transparent 48%, rgba(4, 11, 20, 0.72)),
+    radial-gradient(circle at 70% 18%, rgba(156, 247, 205, 0.24), transparent 34%);
+}
+
 .receipt-image-shell img {
   display: block;
   height: 100%;
   object-fit: cover;
   transform-origin: center;
   width: 100%;
+}
+
+.receipt-image-shell.finish-frost img {
+  filter: saturate(0.92) brightness(1.08) contrast(1.02);
+}
+
+.receipt-image-shell.finish-noir img {
+  filter: saturate(0.72) brightness(0.82) contrast(1.18);
+}
+
+.receipt-image-shell.finish-glow img {
+  filter: saturate(1.12) brightness(1.06) contrast(1.04);
 }
 
 .receipt-image-shell span {

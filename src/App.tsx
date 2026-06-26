@@ -186,15 +186,15 @@ function explorer(path: 'txblock' | 'object', id: string) {
   return `${EXPLORER_BASE}/${NETWORK}/${route}/${id}`
 }
 
-const receiptArtSources = [
-  { src: '/art-direction/hero-builder.png', label: 'Yeti Coding HQ' },
-  { src: '/art-direction/object-proof.png', label: 'Object Proof Wall' },
-  { src: '/art-direction/devnet-proof.png', label: 'Devnet Control Room' },
-  { src: '/art-direction/receipt-gallery.png', label: 'Receipt Gallery' },
-]
+const receiptArtByRecipe: Record<number, { src: string; label: string; family: string }> = {
+  1: { src: '/art-direction/nft-split-snowball.png', label: 'Split Snowball HQ', family: 'Split Snowball' },
+  2: { src: '/art-direction/nft-clan-vault.png', label: 'Clan Vault Campfire', family: 'Clan Vault' },
+  3: { src: '/art-direction/nft-avalanche-guard.png', label: 'Avalanche Guard Shield', family: 'Avalanche Guard' },
+}
 
-const receiptCrops = ['center', 'left center', 'right center', 'center top', 'center bottom']
+const receiptCrops = ['center', '50% 42%', '50% 58%', '48% 50%', '52% 50%']
 const receiptFrames = ['cyan', 'mint', 'pink', 'ice']
+const receiptFinishes = ['crisp', 'frost', 'noir', 'glow']
 
 function seedAt(seed: number[], index: number, fallback = 0) {
   return seed.length > 0 ? seed[index % seed.length] : fallback
@@ -202,20 +202,22 @@ function seedAt(seed: number[], index: number, fallback = 0) {
 
 function receiptVisualTraits(receipt: MintedReceipt) {
   const seedTotal = receipt.seed.reduce((sum, value) => sum + value, 0)
-  const sourceIndex = (seedTotal + receipt.typeId + receipt.steps) % receiptArtSources.length
+  const source = receiptArtByRecipe[receipt.typeId] ?? receiptArtByRecipe[1]
   const cropIndex = (seedAt(receipt.seed, 3) + receipt.vaultPercent) % receiptCrops.length
   const frameIndex = (seedAt(receipt.seed, 7) + receipt.typeId) % receiptFrames.length
+  const finishIndex = (seedAt(receipt.seed, 19) + receipt.steps) % receiptFinishes.length
   const tilt = (seedAt(receipt.seed, 11) % 7) - 3
-  const zoom = 1.04 + ((seedAt(receipt.seed, 17) % 7) / 100)
+  const zoom = 1.01 + ((seedAt(receipt.seed, 17) % 9) / 100)
 
   return {
-    source: receiptArtSources[sourceIndex],
+    source,
     crop: receiptCrops[cropIndex],
     frame: receiptFrames[frameIndex],
+    finish: receiptFinishes[finishIndex],
     tilt,
     zoom,
     serial: seedTotal % 9999,
-    variant: `${sourceIndex + 1}.${cropIndex + 1}.${frameIndex + 1}`,
+    variant: `${receipt.typeId}.${cropIndex + 1}.${frameIndex + 1}.${finishIndex + 1}`,
   }
 }
 
@@ -230,13 +232,13 @@ function ReceiptArt({ receipt }: { receipt: MintedReceipt }) {
       </div>
       <h3>{receipt.name}</h3>
       <p>Receipt #{traits.serial} / Variant {traits.variant}</p>
-      <div className="receipt-image-shell" style={{ transform: `rotate(${traits.tilt}deg)` }}>
+      <div className={`receipt-image-shell finish-${traits.finish}`} style={{ transform: `rotate(${traits.tilt}deg)` }}>
         <img
           src={traits.source.src}
           alt={`${receipt.name} ${traits.source.label} artwork`}
           style={{ objectPosition: traits.crop, transform: `scale(${traits.zoom})` }}
         />
-        <span>{traits.source.label}</span>
+        <span>{traits.source.family} / {traits.finish}</span>
       </div>
       <dl className="receipt-proof-list">
         <div>
