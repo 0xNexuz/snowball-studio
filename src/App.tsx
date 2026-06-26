@@ -148,7 +148,8 @@ function receiptDomId(digest: string) {
 }
 
 function explorer(path: 'txblock' | 'object', id: string) {
-  return `${EXPLORER_BASE}/${path}/${id}?network=${NETWORK}`
+  const route = path === 'txblock' ? 'tx' : 'object'
+  return `${EXPLORER_BASE}/${NETWORK}/${route}/${id}`
 }
 
 function ReceiptArt({ receipt }: { receipt: MintedReceipt }) {
